@@ -1,0 +1,15 @@
+测试通过环境：
+windows10
+anaconda3+python3.8
+torch==1.9.0+cu111
+yolov5依赖模块
+
+使用步骤：
+（1）首先根据官方框架https://github.com/ultralytics/yolov5安装教程安装好yolov5环境，并安装好pyqt5
+（2）切换到自己安装的yolov5环境后，并切换到源码目录，执行python main.py即可运行启动界面，进行相应的操作即可
+
+项目提供文件有：
+python源码
+yolov5s.onnx模型（不提供pytorch模型）
+训练的map,P,R曲线图(在weights\results.png)
+测试图片（在test_img文件夹下面）
