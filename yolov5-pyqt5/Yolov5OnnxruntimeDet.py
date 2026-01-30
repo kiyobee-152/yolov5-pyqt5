@@ -1,11 +1,3 @@
-# -*- coding: utf-8 -*-
-# Copyright (C) 2024/8/31 FIRC. All Rights Reserved
-# @Time    : 2024/8/31 下午9:37
-# @Author  : FIRC
-# @Email   : 1623863129@qq.com
-# @File    : Yolov5OnnxruntimeDet.py
-# @Software: PyCharm-2024.2
-# @ Function Description:
 import cv2
 import numpy as np
 from yolov5_utils import *
@@ -166,3 +158,4 @@ if __name__ == '__main__':
     img = cv2.imread(r'E:\test.png')
     result_list = detector.inference_image(img)
     detector.imshow(result_list=result_list, opencv_img=img)
+
