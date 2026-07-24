@@ -1,98 +1,109 @@
-# YOLOv5 PyQt5 多路检测系统
+# ConveyorBolt Detector — 基于 YOLOv5 的多路输送带锚杆检测平台
 
-这是一个基于 PyQt5 和 YOLOv5/ONNXRuntime 的多路目标检测应用，主要用于**皮带输送机锚杆检测系统**，能够识别传送带上的**锚杆 (bolt)**、**大块煤 (large_sized_coal)** 和 **其他杂物 (Other_garbage)**。项目提供了图像、视频和摄像头输入的检测界面，支持同时管理 8 个检测画面，并可导出统计结果与报告。
+一个面向工业现场的、可视化且可部署的多路目标检测桌面应用。结合 PyQt5 界面与高性能推理（ONNX Runtime / PyTorch），为皮带输送带提供实时锚杆（bolt）检测、异常报警、历史记录与可交付报告，方便质检与巡检人员在生产线上部署使用。
 
-## 功能特点
+亮点
+- 支持最多 8 路同时独立检测画面（图片 / 视频 / 摄像头）。
+- 同时兼容 ONNX 与 PyTorch (.onnx / .pt / .pth) 权重，便于开发与部署。
+- 单帧推理由全局信号量序列化，避免并发抢占导致的设备冲突与性能抖动。
+- 内置图像增强（CLAHE、亮度/对比度调节）以提高弱光或复杂背景下的召回率。
+- 实时报警横幅、统计面板、历史浏览与导出（CSV / JSON / 交互式 HTML 报告）。
+- 线程安全的后处理与记录保存，便于批量生成报告与归档。
 
-- 支持 8 路独立检测画面
-- 支持图片、视频、摄像头输入
-- 支持模型选择、置信度和 IoU 调整
-- 支持检测结果实时显示与保存
-- 支持检测记录统计、历史记录浏览
-- 支持导出 CSV / JSON / HTML 报告
-- 支持图像增强开关 (如 CLAHE、亮度、对比度调整)
+一眼看懂（快速概览）
+- GUI 入口：`main.py` — 构建并管理 8 路检测通道、设备选择、阈值控制与导出功能。
+- 模型层：`model_interface.py` — 抽象检测器（BaseDetector） + ONNX / PyTorch 实现 + 工厂函数 `create_detector`。
+- 推理工具：`yolov5_utils.py` — letterbox、NMS、坐标映射等 YOLOv5 必备工具，来源于 ultralytics/yolov5 并作了裁剪与适配。
+- 视频/图像预处理：`video_processor.py` — 每路的帧预处理、增强与帧率控制。
+- 结果管理：`post_processor.py` + `report_generator.py` + `detection_browser.py` + `statistics_panel.py` — 聚合、导出、浏览与可视化。
+- 资源目录：`weights/`（放置权重文件与 class_names.txt）、`results/`、`logs/`、`datasets/` 等。
 
-## 项目结构
+主要功能（更细）
+- 多源输入：本地图片、视频文件、摄像头（可同时管理 8 路）。
+- 模型灵活：自动识别权重类型（.onnx / .pt/.pth），支持 GPU/CPU 切换（会回退到 CPU）。
+- 实时参数调节：置信度（confidence）与 IoU 阈值可即时生效，实时影响下一帧推理。
+- 报警策略：可过滤某些类别（如 large_sized_coal）不触发报警；报警横幅包含时间戳与统计信息。
+- 导出能力：CSV、JSON、TXT、以及交互式 HTML 报告（可分页/过滤）。
+- 历史管理：线程安全的检测记录存储与浏览器界面。
 
-- **main.py**: 应用程序的主入口，负责构建 PyQt5 用户界面，协调和管理多达8个视频处理线程，并连接各个模块（如模型接口、处理器等）。核心应用逻辑在此文件。
-- **model_interface.py**: AI 逻辑的核心。它为检测模型定义了一个清晰的抽象层（使用工厂模式）。当前实现了基于 ONNX 推理的 `YOLOv5ONNXDetector`，封装了完整的检测流程（预处理、推理、后处理）。所有模型检测逻辑的修改都应在此处进行。
-- **yolov5_utils.py**: 包含 YOLOv5 推理管线中关键的底层辅助函数。这些函数源自官方 YOLOv5 仓库，对于图像预处理 (`letterbox`) 和后处理 (`non_max_suppression`, `scale_coords`) 至关重要，并被 `model_interface.py` 中的检测器调用。
-- **video_processor.py**: 负责每个视频帧的预处理（在推理之前），特别是图像增强功能（CLAHE、亮度、对比度）。它还包含 `FrameRateController` 工具，对于管理视频播放速度和资源使用至关重要。
-- **post_processor.py**: 作为中央的、线程安全的数据聚合器，收集所有并发检测结果。它负责存储、计数，并将结果导出为多种格式（CSV、JSON、TXT）。
-- **report_generator.py**: 负责创建丰富、交互式的 HTML 报告。它展示了如何消费 `PostProcessor` 中的数据，生成具有过滤和分页等高级功能的报告。
-- **statistics_panel.py**: 统计面板的界面逻辑。
-- **detection_browser.py**: 历史记录浏览的界面逻辑。
-- **config_manager.py**: 负责程序的配置管理，例如加载和保存用户设置。
-- **logger.py**: 程序的日志记录模块。
-- **system_monitor.py**: 提供实时的系统性能监控功能，如 GPU 使用情况。
-- **weights/**: 存放模型权重文件和类别名称文件。
-- **results/**: 存放导出的检测结果和报告。
-- **datasets/**: 数据集目录，通常包含训练、验证和测试数据。
-
-## 环境要求
-
+运行要求
 - Python 3.8+
-- PyQt5
-- OpenCV (opencv-python)
-- NumPy
-- ONNX Runtime (onnxruntime)
-- `requirements.txt` 中列出的所有依赖项
+- 推荐依赖（最小可运行组）：
+  - PyQt5
+  - opencv-python
+  - numpy
+  - onnxruntime (若使用 GPU，请安装对应的 onnxruntime-gpu)
+- 若要加载 PyTorch `.pt/.pth` 权重，需安装：
+  - torch, torchvision
 
-## 安装依赖
+快速开始（推荐流程）
+1. 克隆项目并进入目录：
+   ```bash
+   git clone https://github.com/kiyobee-152/yolov5-pyqt5.git
+   cd yolov5-pyqt5
+   ```
+2. 建议使用虚拟环境：
+   ```bash
+   python -m venv .venv
+   # Windows
+   .venv\Scripts\activate
+   # macOS / Linux
+   source .venv/bin/activate
+   ```
+3. 安装必要依赖：
+   ```bash
+   pip install -U pip
+   pip install opencv-python numpy PyQt5 onnxruntime
+   # 如果使用 PyTorch 权重 (.pt/.pth)
+   pip install torch torchvision
+   ```
+4. 将你的模型放入 `weights/` 文件夹：
+   - 支持：`*.onnx`, `*.pt`, `*.pth`
+   - 在同文件夹放入 `class_names.txt`（每行一个类名，索引按行号从 0 开始；示例仓库已包含）
+5. 启动 GUI：
+   ```bash
+   python main.py
+   ```
+6. 在左侧选择模型与设备，设置置信度/IoU，点击每路画面的 “图片 / 视频 / 摄像头” 开始检测。使用“导出报告”生成 HTML 报告。
 
-**强烈建议使用虚拟环境**：
+模型 & 类别（说明）
+- 若 weights 旁未找到 `class_names.txt`，程序将使用默认类别列表（仓库实现默认为 `['Other_garbage', 'bolt', 'large_sized_coal']`）。
+- `class_names.txt` 示例：
+  ```
+  Other_garbage
+  bolt
+  large_sized_coal
+  ```
+- 请确保类别文件与模型训练时使用的类别顺序一致，否则类别映射会错误。
 
-1.  创建并激活虚拟环境：
-    ```bash
-    python -m venv .venv
-    # Windows
-    .venv\Scripts\activate
-    # macOS/Linux
-    source .venv/bin/activate
-    ```
-2.  安装核心依赖：
-    ```bash
-    pip install -U pip
-    pip install opencv-python numpy PyQt5 onnxruntime
-    ```
-3.  生成并安装 `requirements.txt` (推荐):
-    ```bash
-    # 在项目根目录下运行，确保所有当前环境的依赖被记录
-    pip freeze > requirements.txt
-    pip install -r requirements.txt
-    ```
+部署与性能建议
+- 优先使用 ONNX（onnxruntime），在多数部署场景中 ONNX Runtime 在 CPU / GPU 上更容易获得稳定性能。
+- 如果要在 GPU 上运行，请安装 onnxruntime-gpu 并在 GUI 中选择 “GPU”。若环境不支持 GPU，程序会自动回退到 CPU 并提示。
+- 性能优化建议：
+  - 使用 ONNX 模型的导出版本并做简化（onnx-simplifier / onnxruntime 的优化工具）。
+  - 对实时推理节点考虑半精度或量化（动态/静态量化），但请验证精度影响。
+  - 调整 FrameRateController 的目标帧率以匹配推理速度，避免丢帧或延迟累积。
+- 在资源受限（CPU-only）环境，可降低 GUI 刷新频率或仅在关键帧进行完整推理以节省计算。
 
-**如果你打算使用 PyTorch 格式的权重文件 (.pt / .pth) 或者需要 PyTorch 相关功能，还需要安装：**
+开发者注意事项
+- 代码结构清晰：`model_interface.py` 为模型抽象，新增模型格式时只需在工厂 `create_detector` 中添加实现即可。
+- 推理并发：为了避免多个线程同时占用 GPU，主程序使用了一个全局 Semaphore 来串行化推理请求（如果你要支持真正并行且安全的多 GPU 推理，需要在 Detector 层做更细粒度的设备分配）。
+- 日志：`logger.py` 提供统一的日志封装，运行时会在 `logs/` 下保留日志文件。
+- 配置：`config.json` 自动保存 UI 设置（置信度、IoU、所选模型、每路图像增强开关等）。
 
-```bash
-pip install torch torchvision
-```
+常见问题（FAQ）
+- Q: 启动时提示找不到 GPU / CUDA？
+  - A: 请确认已安装相应的 GPU 驱动、CUDA 以及与之匹配的 onnxruntime-gpu 或 torch + CUDA 支持；否则选择 CPU 或用 ONNX CPU 进行部署。
+- Q: `.pt` 模型加载很慢或出错？
+  - A: 仓库的 PyTorch 加载通过 torch.hub 调用 ultralytics/yolov5；离线环境可将官方 yolov5 克隆到项目根目录的 `./yolov5` 或设置 `YOLOV5_REPO` 指向本地仓库。
+- Q: 报告导出为空？
+  - A: 请确认已有检测历史（在界面产生了若干检测记录），否则导出功能会提示无检测记录可导出。
 
-## 运行方式
+安全与许可
+- 本项目当前未在仓库中声明明确的开源许可证（README 中已有提示）。在公开分发、商用或嵌入到产品之前，请补充适当的许可证并确认第三方模型（如 ultralytics）使用条款。
 
-1.  **准备模型文件**: 确保你已将模型文件（例如 `best.onnx` 或 `yolov5s.pt`）和对应的类别名称文件 (`class_names.txt`) 放置在 `weights/` 目录下。
-2.  **启动程序**:
-    ```bash
-    python main.py
-    ```
+致谢
+- 本项目在预处理/后处理环节借鉴并集成了 ultralytics/YOLOv5 的实现思想（letterbox、NMS、scale_coords 等），并在此基础上封装为工业级的可视化运维工具。
 
-## 使用说明
-
-- 在主界面左侧选择所需的模型、推理设备（CPU/GPU）、置信度阈值和 IoU 阈值。
-- 通过点击对应画面的“图片”、“视频”或“摄像头”按钮，加载不同的输入源。
-- 可以使用“全部启动”按钮同步开启所有检测通道。
-- 检测结果将实时显示在界面上，并通过统计与报告功能查看汇总信息。
-
-## 配置文件
-
-程序会自动在项目根目录下生成并使用 `config.json` 文件来保存用户的各项配置，包括但不限于阈值设置、设备选择和图像增强选项。
-
-## 注意事项
-
-- 如果模型文件路径不正确或文件不存在，程序可能无法正常初始化检测器。
-- 请根据你使用的模型格式（ONNX 或 PyTorch）选择并准备相应的权重文件。
-- 运行前，请务必确认摄像头设备或视频文件的路径是正确的。
-
-## 许可证
-
-**重要提示**: 本项目目前未明确声明任何开源许可证。在分发、修改或商业使用本项目之前，请务必自行确认并添加适当的许可证信息。
+下一步建议（可选）
+- 我可以把这个 README 直接写入仓库（创建一个更新提交），或者为你生成一个精确的 requirements.txt（包含版本号）以便一键部署。要我帮你做哪一个？
