@@ -1,0 +1,66 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging / build
+build/
+dist/
+*.egg-info/
+.eggs/
+*.whl
+
+# IDE / editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+
+# Logs and runtime outputs
+logs/
+results/
+images/
+*.log
+*.out
+*.tmp
+
+# Model / training artifacts
+exp/
+runs/
+wandb/
+checkpoints/
+*.pt
+*.onnx
+*.weights
+*.bin
+*.pb
+*.h5
+*.ckpt
+
+# Dataset and local media
+datasets/
+*.jpg
+*.jpeg
+*.png
+*.mp4
+*.avi
+*.mov
+*.gif
+
+# Local configuration secrets
+config_local.json
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
