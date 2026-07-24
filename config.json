@@ -1,0 +1,17 @@
+{
+  "confidence": 0.45,
+  "iou": 0.45,
+  "weights": "best.onnx",
+  "device": "gpu",
+  "enhancement": false,
+  "feed_enhancements": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ]
+}

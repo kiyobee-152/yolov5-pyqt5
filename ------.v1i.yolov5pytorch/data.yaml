@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 3
+names: ['Other_garbage', 'bolt', 'large_sized_coal']
+
+roboflow:
+  workspace: ssz-5nhh6
+  project: -6cz4q
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/ssz-5nhh6/-6cz4q/dataset/1

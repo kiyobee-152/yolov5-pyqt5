@@ -1,0 +1,672 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>锚杆检测报告</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 30px;
+        }
+        
+        header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .report-meta {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 15px;
+        }
+        
+        .report-meta p {
+            margin: 8px 0;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        section {
+            margin-bottom: 50px;
+        }
+        
+        section h2 {
+            font-size: 24px;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            text-align: center;
+        }
+        
+        .summary-card .label {
+            font-size: 12px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .summary-card .value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .progress-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            height: 20px;
+        }
+        
+        .progress {
+            flex: 1;
+            height: 100%;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .feed-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .feed-card {
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+        }
+        
+        .feed-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .feed-stats-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #764ba2;
+        }
+        
+        /* ✅ 新增：详细记录筛选和分页样式 */
+        .filter-section {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 13px;
+        }
+        
+        .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .pagination button {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            background-color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .pagination button:hover {
+            background-color: #667eea;
+            color: white;
+        }
+        
+        .pagination button.active {
+            background-color: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .page-info {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .alert-row {
+            background-color: #ffe0e0 !important;
+        }
+        
+        .alert-row td {
+            color: #c00;
+            font-weight: bold;
+        }
+        
+        .tag {
+            display: inline-block;
+            background-color: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        footer {
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+            padding: 20px;
+            color: #999;
+            font-size: 12px;
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 皮带传送带锚杆检测报告</h1>
+            <div class="report-meta">
+                <p><strong>生成时间:</strong> 2026-05-07 21:26:39</p>
+                <p><strong>检测时间范围:</strong> 2026-05-07 21:26:25 至 2026-05-07 21:26:33</p>
+                <p><strong>统计来源:</strong> 8个摄像头统一数据 | <strong>总检测记录:</strong> 3 条</p>
+            </div>
+        </header>
+        
+        <div class="content">
+            <!-- 统计概览 -->
+            <section>
+                <h2>📊 统计概览</h2>
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="label">总检测数</div>
+                        <div class="value">3</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">检测类别</div>
+                        <div class="value">1</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">平均置信度</div>
+                        <div class="value">0.530</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">主要类别</div>
+                        <div class="value">bolt</div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 类别统计 -->
+            <section>
+                <h2>📈 全局类别统计</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>检测类别</th>
+                            <th>检测数量</th>
+                            <th>占比</th>
+                            <th>可视化</th>
+                            <th>平均置信度</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                <tr>
+                    <td><strong>bolt</strong></td>
+                    <td>3</td>
+                    <td>100.00%</td>
+                    <td>
+                        <div class="progress-bar">
+                            <div class="progress">
+                                <div class="progress-fill" style="width: 100.0%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>0.530</td>
+                </tr>
+            
+                    </tbody>
+                </table>
+            </section>
+            
+            <!-- 镜头分布统计 -->
+            <section>
+                <h2>🎥 各镜头检测分布</h2>
+                <div class="feed-stats">
+                    
+                    <div class="feed-card">
+                        <h3>🎥 画面1</h3>
+                        <div class="feed-stats-item">
+                            <span>检测数:</span>
+                            <span class="stat-value">2</span>
+                        </div>
+                        <div class="feed-stats-item">
+                            <span>主要类别:</span>
+                            <span class="stat-value">bolt</span>
+                        </div>
+                        <div class="feed-stats-item">
+                            <span>平均置信度:</span>
+                            <span class="stat-value">0.550</span>
+                        </div>
+                        <div class="feed-stats-item" style="margin-top: 10px; font-size: 12px; color: #666;">
+                            <span>分布: bolt(2)</span>
+                        </div>
+                    </div>
+                
+                    <div class="feed-card">
+                        <h3>🎥 画面2</h3>
+                        <div class="feed-stats-item">
+                            <span>检测数:</span>
+                            <span class="stat-value">0</span>
+                        </div>
+                        <div class="feed-stats-item" style="color: #999;">
+                            <em>暂无数据</em>
+                        </div>
+                    </div>
+                
+                    <div class="feed-card">
+                        <h3>🎥 画面3</h3>
+                        <div class="feed-stats-item">
+                            <span>检测数:</span>
+                            <span class="stat-value">1</span>
+                        </div>
+                        <div class="feed-stats-item">
+                            <span>主要类别:</span>
+                            <span class="stat-value">bolt</span>
+                        </div>
+                        <div class="feed-stats-item">
+                            <span>平均置信度:</span>
+                            <span class="stat-value">0.490</span>
+                        </div>
+                        <div class="feed-stats-item" style="margin-top: 10px; font-size: 12px; color: #666;">
+                            <span>分布: bolt(1)</span>
+                        </div>
+                    </div>
+                
+                    <div class="feed-card">
+                        <h3>🎥 画面4</h3>
+                        <div class="feed-stats-item">
+                            <span>检测数:</span>
+                            <span class="stat-value">0</span>
+                        </div>
+                        <div class="feed-stats-item" style="color: #999;">
+                            <em>暂无数据</em>
+                        </div>
+                    </div>
+                
+                    <div class="feed-card">
+                        <h3>🎥 画面5</h3>
+                        <div class="feed-stats-item">
+                            <span>检测数:</span>
+                            <span class="stat-value">0</span>
+                        </div>
+                        <div class="feed-stats-item" style="color: #999;">
+                            <em>暂无数据</em>
+                        </div>
+                    </div>
+                
+                    <div class="feed-card">
+                        <h3>🎥 画面6</h3>
+                        <div class="feed-stats-item">
+                            <span>检测数:</span>
+                            <span class="stat-value">0</span>
+                        </div>
+                        <div class="feed-stats-item" style="color: #999;">
+                            <em>暂无数据</em>
+                        </div>
+                    </div>
+                
+                    <div class="feed-card">
+                        <h3>🎥 画面7</h3>
+                        <div class="feed-stats-item">
+                            <span>检测数:</span>
+                            <span class="stat-value">0</span>
+                        </div>
+                        <div class="feed-stats-item" style="color: #999;">
+                            <em>暂无数据</em>
+                        </div>
+                    </div>
+                
+                    <div class="feed-card">
+                        <h3>🎥 画面8</h3>
+                        <div class="feed-stats-item">
+                            <span>检测数:</span>
+                            <span class="stat-value">0</span>
+                        </div>
+                        <div class="feed-stats-item" style="color: #999;">
+                            <em>暂无数据</em>
+                        </div>
+                    </div>
+                
+                </div>
+            </section>
+            
+            <!-- ✅ 详细记录 - 新增筛选和分页 -->
+            <section>
+                <h2>📋 详细检测记录</h2>
+                
+                <!-- ✅ 筛选器 -->
+                <div class="filter-section">
+                    <div class="filter-group">
+                        <label for="feedFilter">筛选镜头:</label>
+                        <select id="feedFilter" onchange="applyFilters()">
+                            <option value="">所有镜头</option>
+                            <option value="画面1">画面1</option>
+<option value="画面2">画面2</option>
+<option value="画面3">画面3</option>
+<option value="画面4">画面4</option>
+<option value="画面5">画面5</option>
+<option value="画面6">画面6</option>
+<option value="画面7">画面7</option>
+<option value="画面8">画面8</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="classFilter">筛选类别:</label>
+                        <select id="classFilter" onchange="applyFilters()">
+                            <option value="">所有类别</option>
+                            <option value="bolt">bolt</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="pageSize">每页条数:</label>
+                        <select id="pageSize" onchange="applyFilters()">
+                            <option value="20">20条</option>
+                            <option value="50" selected>50条</option>
+                            <option value="100">100条</option>
+                            <option value="200">200条</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- ✅ 统计信息 -->
+                <div class="page-info" id="pageInfo"></div>
+                
+                <!-- ✅ 数据表格 -->
+                <table id="detailTable">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>时间戳</th>
+                            <th>镜头</th>
+                            <th>帧ID</th>
+                            <th>检测类别</th>
+                            <th>置信度</th>
+                            <th>位置</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        
+                <tr class="alert-row">
+                    <td>1</td>
+                    <td>2026-05-07 21:26:25</td>
+                    <td><span class="tag">画面1</span></td>
+                    <td>0</td>
+                    <td><strong>bolt</strong></td>
+                    <td>0.540</td>
+                    <td style="font-size:12px;">(296,303,368,640)</td>
+                </tr>
+            
+                <tr class="alert-row">
+                    <td>2</td>
+                    <td>2026-05-07 21:26:25</td>
+                    <td><span class="tag">画面1</span></td>
+                    <td>0</td>
+                    <td><strong>bolt</strong></td>
+                    <td>0.560</td>
+                    <td style="font-size:12px;">(325,31,420,280)</td>
+                </tr>
+            
+                <tr class="alert-row">
+                    <td>3</td>
+                    <td>2026-05-07 21:26:33</td>
+                    <td><span class="tag">画面3</span></td>
+                    <td>0</td>
+                    <td><strong>bolt</strong></td>
+                    <td>0.490</td>
+                    <td style="font-size:12px;">(486,274,553,640)</td>
+                </tr>
+            
+                    </tbody>
+                </table>
+                
+                <!-- ✅ 分页控件 -->
+                <div class="pagination" id="pagination"></div>
+            </section>
+        </div>
+        
+        <footer>
+            <p>此报告由皮带传送带锚杆检测系统自动生成</p>
+            <p>© 2026 检测系统 | 2026-05-07 21:26:39</p>
+        </footer>
+    </div>
+    
+    <!-- ✅ 新增JavaScript实现分页和筛选 -->
+    <script>
+        // 原始数据
+        const allRecords = [{"index": 1, "timestamp": "2026-05-07 21:26:25", "feed_name": "画面1", "frame_id": "0", "class_name": "bolt", "confidence": "0.540", "bbox": "296,303,368,640"}, {"index": 2, "timestamp": "2026-05-07 21:26:25", "feed_name": "画面1", "frame_id": "0", "class_name": "bolt", "confidence": "0.560", "bbox": "325,31,420,280"}, {"index": 3, "timestamp": "2026-05-07 21:26:33", "feed_name": "画面3", "frame_id": "0", "class_name": "bolt", "confidence": "0.490", "bbox": "486,274,553,640"}];
+        let filteredRecords = [...allRecords];
+        let currentPage = 1;
+        
+        // 定义强调的类别
+        const alertClasses = new Set(['Other_garbage', 'bolt']);
+        
+        function applyFilters() {
+            const feedFilter = document.getElementById('feedFilter').value;
+            const classFilter = document.getElementById('classFilter').value;
+            const pageSize = parseInt(document.getElementById('pageSize').value);
+            
+            // 过滤数据
+            filteredRecords = allRecords.filter(record => {
+                if (feedFilter && record.feed_name !== feedFilter) return false;
+                if (classFilter && record.class_name !== classFilter) return false;
+                return true;
+            });
+            
+            currentPage = 1;
+            renderTable(pageSize);
+            renderPagination(pageSize);
+        }
+        
+        function renderTable(pageSize) {
+            const tbody = document.getElementById('tableBody');
+            const startIdx = (currentPage - 1) * pageSize;
+            const endIdx = startIdx + pageSize;
+            const pageData = filteredRecords.slice(startIdx, endIdx);
+            
+            tbody.innerHTML = pageData.map((record, idx) => {
+                const rowClass = alertClasses.has(record.class_name) ? 'alert-row' : '';
+                return `
+                    <tr class="{rowClass}">
+                        <td>${record.index}</td>
+                        <td>${record.timestamp}</td>
+                        <td><span class="tag">${record.feed_name}</span></td>
+                        <td>${record.frame_id}</td>
+                        <td><strong>${record.class_name}</strong></td>
+                        <td>${record.confidence}</td>
+                        <td style="font-size:12px;">(${record.bbox})</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // 更新统计信息
+            const total = filteredRecords.length;
+            const shown = Math.min(endIdx, total);
+            document.getElementById('pageInfo').textContent = 
+                `显示 ${startIdx + 1}-${shown} / 总计 ${total} 条 | 第 ${currentPage}/${Math.ceil(total / pageSize)} 页`;
+        }
+        
+        function renderPagination(pageSize) {
+            const totalPages = Math.ceil(filteredRecords.length / pageSize);
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+            
+            let html = `<button onclick="goPage(1)" ${currentPage === 1 ? 'disabled' : ''}>首页</button>`;
+            html += `<button onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
+            
+            // 页码按钮
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button onclick="goPage(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+            }
+            
+            html += `<button onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
+            html += `<button onclick="goPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>末页</button>`;
+            
+            pagination.innerHTML = html;
+        }
+        
+        function goPage(page) {
+            currentPage = page;
+            const pageSize = parseInt(document.getElementById('pageSize').value);
+            renderTable(pageSize);
+            renderPagination(pageSize);
+            window.scrollTo(0, document.getElementById('detailTable').offsetTop - 100);
+        }
+        
+        // 初始化
+        window.onload = function() {
+            const pageSize = parseInt(document.getElementById('pageSize').value);
+            renderTable(pageSize);
+            renderPagination(pageSize);
+        };
+    </script>
+</body>
+</html>
